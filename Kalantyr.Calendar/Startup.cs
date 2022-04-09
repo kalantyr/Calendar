@@ -26,6 +26,13 @@ namespace Kalantyr.Calendar
         {
             services.Configure<CalendarServiceConfig>(_configuration.GetSection("CalendarService"));
 
+            services.AddHttpClient<AuthClient>(client => client.BaseAddress = new Uri("https://kalantyr.ru/auth"));
+            services.AddHttpClient<AuthClient>((sp, client) =>
+            {
+                var config = sp.GetService<IOptions<CalendarServiceConfig>>().Value;
+                client.BaseAddress = new Uri(config.AuthService);
+            });
+
             services.AddSingleton<IAuthClient>(sp => new AuthClient(
                 sp.GetService<IHttpClientFactory>(),
                 sp.GetService<IOptions<CalendarServiceConfig>>().Value.ApiKey));

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Kalantyr.Auth.Services;
@@ -22,8 +23,22 @@ namespace Kalantyr.Calendar.Controllers
         [Route("all")]
         public async Task<IActionResult> GetAllEventsAsync(CancellationToken cancellationToken)
         {
-            var result = await _calendarService.GetAllEventsAsync(Request.GetAuthToken(), cancellationToken);
-            return Ok(result);
+            return await Wrap(ct => 
+                _calendarService.GetAllEventsAsync(Request.GetAuthToken(), ct),
+                cancellationToken);
+        }
+
+        private async Task<IActionResult> Wrap<T>(Func<CancellationToken, Task<T>> f, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var result = await f(cancellationToken);
+                return Ok(result);
+            }
+            catch (Exception e)
+            {
+                return base.StatusCode((int)HttpStatusCode.InternalServerError, e.GetBaseException().Message);
+            }
         }
     }
 }

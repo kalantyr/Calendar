@@ -2,6 +2,8 @@
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Kalantyr.Auth.Client;
+using Kalantyr.Auth.Models;
 using Kalantyr.Calendar.Client;
 using Moq;
 using NUnit.Framework;
@@ -19,14 +21,24 @@ namespace Kalantyr.Calendar.Tests
             var cancellationToken = CancellationToken.None;
 
             _httpClientFactory
-                .Setup(hcf => hcf.CreateClient(It.IsAny<string>()))
+                .Setup(hcf => hcf.CreateClient(nameof(AuthClient)))
                 .Returns(new HttpClient
                 {
-                    BaseAddress = new Uri("http://u1628270.plsk.regruhosting.ru/auth")
+                    BaseAddress = new Uri("https://kalantyr.ru/auth")
+                });
+            _httpClientFactory
+                .Setup(hcf => hcf.CreateClient(nameof(CalendarClient)))
+                .Returns(new HttpClient
+                {
+                    BaseAddress = new Uri("https://kalantyr.ru/calendar")
                 });
 
+            var authClient = new AuthClient(_httpClientFactory.Object);
+            var loginResult = await authClient.LoginByPasswordAsync(new LoginPasswordDto{Login = "user1", Password = "qwerty1" }, cancellationToken);
+            var token = loginResult.Result.Value;
+
             var client = new CalendarClient(_httpClientFactory.Object, "asjdFbh67");
-            var allEventsResult = await client.GetAllEventsAsync("1234567", cancellationToken);
+            var allEventsResult = await client.GetAllEventsAsync(token, cancellationToken);
             Assert.IsNotNull(allEventsResult);
         }
     }
